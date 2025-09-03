@@ -12,8 +12,10 @@ class CenterpointCalculator:
 
         # mask entire image except for brightest points
         gray_im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-        ret, thresh_im = cv2.threshold(gray_im, 125, 255, cv2.THRESH_BINARY)
-        # TODO: normalize image colors so brightest color is always pure white?
+        min_diff = 255 - np.array(gray_im).max()
+        gray_im += min_diff
+        ret, thresh_im = cv2.threshold(gray_im, 155, 255, cv2.THRESH_BINARY)
+        # TODO: mess with image brightening?
 
         # generate contours from filtered image
         contours, hierarchies = cv2.findContours(thresh_im, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
