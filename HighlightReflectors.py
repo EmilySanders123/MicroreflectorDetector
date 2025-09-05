@@ -13,4 +13,6 @@ args = parser.parse_args()
 
 # calculate and store centerpoints for specified image
 calc = CenterpointCalculator()
-curr_centerpoints = calc.get_centerpoints(args.path)
+img_centerpoints = calc.get_centerpoints(args.path)
+
+print(img_centerpoints)

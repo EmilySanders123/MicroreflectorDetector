@@ -1,3 +1,5 @@
+from threading import Thread
+
 import cv2
 import numpy as np
 
@@ -34,12 +36,9 @@ class CenterpointCalculator:
         for i in centerpoints:
             cv2.circle(points_im, i, 2, (0, 0, 255), -1)
 
-        # display images
-        cv2.imshow("Original image", im)
-        cv2.imshow("Processed image", thresh_im)
-        cv2.imshow("Detected points", points_im)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # display images in separate thread so program doesn't pause until they are closed
+        thread = Thread(target=self.__display_images, args=(im, thresh_im, points_im))
+        thread.start()
 
         return centerpoints
 
@@ -51,3 +50,10 @@ class CenterpointCalculator:
             return cx, cy
         else:
             return None
+
+    def __display_images(self, og_img: np.ndarray, processed_img: np.ndarray, detected_points: np.ndarray) -> None:
+        cv2.imshow("Original image", og_img)
+        cv2.imshow("Processed image", processed_img)
+        cv2.imshow("Detected points", detected_points)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
