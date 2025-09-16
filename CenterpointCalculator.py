@@ -9,11 +9,12 @@ class CenterpointCalculator:
         # placeholder
         pass
 
-    def get_centerpoints(self, img_name: str) -> list:
+    def get_centerpoints(self, img_name: str, show_imgs: bool) -> list:
         """
         Finds unique centerpoints of bright points within an image in (x, y) format and returns them as a list ordered
         by the distance from the center of the point cluster.
         :param img_name: Path to image to be processed
+        :param show_imgs: Display images of processing steps
         :return: Set of unique centerpoints of bright points within an image
         """
         
@@ -51,8 +52,9 @@ class CenterpointCalculator:
         centerpoints_list.sort(key=lambda p: math.sqrt((p[0] - center_x)**2 * (p[1] - center_y)**2))
 
         # display images in separate thread so program doesn't pause until they are closed
-        thread = Thread(target=self.__display_images, args=(im, thresh_im, centerpoints_list, center_x, center_y))
-        thread.start()
+        if show_imgs:
+            thread = Thread(target=self.__display_images, args=(im, thresh_im, centerpoints_list, center_x, center_y))
+            thread.start()
 
         return centerpoints_list
 
