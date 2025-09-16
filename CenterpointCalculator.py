@@ -1,3 +1,4 @@
+import math
 from threading import Thread
 
 import cv2
@@ -8,9 +9,10 @@ class CenterpointCalculator:
         # placeholder
         pass
 
-    def get_centerpoints(self, img_name: str) -> set:
+    def get_centerpoints(self, img_name: str) -> list:
         """
-        Finds unique centerpoints of bright points within an image in (x, y) format and returns them as a set.
+        Finds unique centerpoints of bright points within an image in (x, y) format and returns them as a list ordered
+        by the distance from the center of the point cluster.
         :param img_name: Path to image to be processed
         :return: Set of unique centerpoints of bright points within an image
         """
@@ -35,11 +37,24 @@ class CenterpointCalculator:
             if point:
                 centerpoints.add(point)
 
+        # find center coordinate of all centerpoints listed
+        centerpoints_list = list(centerpoints)
+        center_x = 0
+        center_y = 0
+        for i in range(len(centerpoints_list)):
+            center_x += centerpoints_list[i][0]
+            center_y += centerpoints_list[i][1]
+        center_x //= len(centerpoints_list)
+        center_y //= len(centerpoints_list)
+
+        # sort centerpoints list by proximity to center so they are always in the same order
+        centerpoints_list.sort(key=lambda p: math.sqrt((p[0] - center_x)**2 * (p[1] - center_y)**2))
+
         # display images in separate thread so program doesn't pause until they are closed
-        thread = Thread(target=self.__display_images, args=(im, thresh_im, centerpoints))
+        thread = Thread(target=self.__display_images, args=(im, thresh_im, centerpoints_list, center_x, center_y))
         thread.start()
 
-        return centerpoints
+        return centerpoints_list
 
     def __find_contour_center(self, contour: np.ndarray) -> tuple[int, int] | None:
         M = cv2.moments(contour)
@@ -50,7 +65,7 @@ class CenterpointCalculator:
         else:
             return None
 
-    def __display_images(self, og_img: np.ndarray, processed_img: np.ndarray, centerpoints: set) -> None:
+    def __display_images(self, og_img: np.ndarray, processed_img: np.ndarray, centerpoints: list, center_x: int, center_y: int) -> None:
         # draw all centerpoints on a new image
         im_height, im_width, _ = og_img.shape
         points_img = np.zeros((im_height, im_width, 3), np.uint8)
@@ -58,9 +73,15 @@ class CenterpointCalculator:
         for i in centerpoints:
             cv2.circle(points_img, i, 2, (0, 0, 255), -1)
 
+        # make new image with lines drawn between ordered points
+        pts = np.array(centerpoints, np.int32)
+        shape_img = np.zeros((im_height, im_width, 3), np.uint8)
+        cv2.polylines(shape_img, [pts], True, (0, 255, 255))
+
         # display images
         cv2.imshow("Original image", og_img)
         cv2.imshow("Processed image", processed_img)
         cv2.imshow("Detected points", points_img)
+        cv2.imshow("Point shape", shape_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
