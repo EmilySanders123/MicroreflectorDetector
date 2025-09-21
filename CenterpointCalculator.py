@@ -33,10 +33,13 @@ class CenterpointCalculator:
 
         # find set of centerpoints for each contour
         centerpoints = set()
+        selected_contours = []
         for i in contours:
-            point = self.__find_contour_center(i)
-            if point:
-                centerpoints.add(point)
+            if cv2.arcLength(i, True) < 50:
+                point = self.__find_contour_center(i)
+                if point:
+                    centerpoints.add(point)
+                    selected_contours.append(i)
 
         # find center coordinate of all centerpoints listed
         centerpoints_list = list(centerpoints)
@@ -53,7 +56,7 @@ class CenterpointCalculator:
 
         # display images in separate thread so program doesn't pause until they are closed
         if show_imgs:
-            thread = Thread(target=self.__display_images, args=(im, thresh_im, centerpoints_list, center_x, center_y))
+            thread = Thread(target=self.__display_images, args=(im, thresh_im, tuple(selected_contours), centerpoints_list))
             thread.start()
 
         return centerpoints_list
@@ -67,13 +70,20 @@ class CenterpointCalculator:
         else:
             return None
 
-    def __display_images(self, og_img: np.ndarray, processed_img: np.ndarray, centerpoints: list, center_x: int, center_y: int) -> None:
-        # draw all centerpoints on a new image
+    def __display_images(self, og_img: np.ndarray, processed_img: np.ndarray, contours: tuple, centerpoints: list) -> None:
+        # draw contours on image
         im_height, im_width, _ = og_img.shape
+        contour_img = np.zeros((im_height, im_width, 3), np.uint8)
+        contour_img[:, :] = [255, 255, 255]
+        cv2.drawContours(contour_img, contours, -1, (0, 0, 0), 3)
+
+        # draw all centerpoints on a new image
         points_img = np.zeros((im_height, im_width, 3), np.uint8)
         points_img[:, :] = [255, 255, 255]
+        marked_og_img = og_img.copy()
         for i in centerpoints:
             cv2.circle(points_img, i, 2, (0, 0, 255), -1)
+            cv2.circle(marked_og_img, i, 2, (0, 0, 255), -1)
 
         # make new image with lines drawn between ordered points
         pts = np.array(centerpoints, np.int32)
@@ -83,7 +93,9 @@ class CenterpointCalculator:
         # display images
         cv2.imshow("Original image", og_img)
         cv2.imshow("Processed image", processed_img)
+        cv2.imshow('Selected contours', contour_img)
         cv2.imshow("Detected points", points_img)
+        cv2.imshow("Marked-up original image", marked_og_img)
         cv2.imshow("Point shape", shape_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
