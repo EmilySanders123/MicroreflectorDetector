@@ -82,7 +82,7 @@ elif args.action.lower() == "match":
     new_img = np.zeros((500, 500, 3), np.uint8)
     cv2.polylines(new_img, [pts], True, (0, 255, 255))
 
-    orb = cv2.ORB_create()
+    orb = cv2.ORB_create(nfeatures=5000)
     for obj in point_obj_list:
         # TODO: try to match points
 
@@ -97,6 +97,8 @@ elif args.action.lower() == "match":
         stored_keypoints, stored_descriptors = orb.detectAndCompute(shape_img, None)
         matcher = cv2.BFMatcher()
         matches = matcher.match(new_descriptors, stored_descriptors)
+
+        print(len(matches))
 
         # show matches
         final_img = cv2.drawMatches(new_img, new_keypoints, shape_img, stored_keypoints, matches[:20], None)
