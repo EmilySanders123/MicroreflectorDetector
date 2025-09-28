@@ -83,13 +83,15 @@ elif args.action.lower() == "match":
     cv2.polylines(new_img, [pts], True, (0, 255, 255))
 
     orb = cv2.ORB_create(nfeatures=5000)
+
+    avg_distance_dict = {}
     for obj in point_obj_list:
-        # TODO: try to match points
 
         # make new image with lines drawn between ordered points
         pts = np.array(obj["points"], np.int32)
         shape_img = np.zeros((500, 500, 3), np.uint8)
         cv2.polylines(shape_img, [pts], True, (0, 255, 255))
+        # shape_img = cv2.rotate(shape_img, cv2.ROTATE_180)
         cv2.imshow(f"Stored point ID: {obj["id"]}", shape_img)
 
         # compute matches between images
@@ -98,7 +100,14 @@ elif args.action.lower() == "match":
         matcher = cv2.BFMatcher()
         matches = matcher.match(new_descriptors, stored_descriptors)
 
-        print(len(matches))
+        avg_distance = 0
+        for match in matches:
+            print(match.distance)
+            avg_distance += match.distance
+
+        avg_distance = avg_distance / len(matches)
+
+        avg_distance_dict[obj["id"]] = avg_distance
 
         # show matches
         final_img = cv2.drawMatches(new_img, new_keypoints, shape_img, stored_keypoints, matches[:20], None)
@@ -107,6 +116,9 @@ elif args.action.lower() == "match":
         cv2.imshow(f"Comparison with ID {obj["id"]}", final_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+    print(avg_distance_dict)
+    print(f"Closest match: {min(avg_distance_dict, key=avg_distance_dict.get)}")
 
 elif args.action.lower() == "test":
     pass
