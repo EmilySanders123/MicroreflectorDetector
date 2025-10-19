@@ -102,7 +102,6 @@ elif args.action.lower() == "match":
 
         avg_distance = 0
         for match in matches:
-            print(match.distance)
             avg_distance += match.distance
 
         avg_distance = avg_distance / len(matches)
