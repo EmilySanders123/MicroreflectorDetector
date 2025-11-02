@@ -1,6 +1,4 @@
-import math
 from threading import Thread
-
 import cv2
 import numpy as np
 
@@ -41,25 +39,12 @@ class CenterpointCalculator:
                     centerpoints.add(point)
                     selected_contours.append(i)
 
-        # find center coordinate of all centerpoints listed
-        centerpoints_list = list(centerpoints)
-        center_x = 0
-        center_y = 0
-        for i in range(len(centerpoints_list)):
-            center_x += centerpoints_list[i][0]
-            center_y += centerpoints_list[i][1]
-        center_x //= len(centerpoints_list)
-        center_y //= len(centerpoints_list)
-
-        # sort centerpoints list by proximity to center so they are always in the same order
-        centerpoints_list.sort(key=lambda p: math.sqrt((p[0] - center_x)**2 * (p[1] - center_y)**2))
-
         # display images in separate thread so program doesn't pause until they are closed
         if show_imgs:
-            thread = Thread(target=self.__display_images, args=(im, thresh_im, tuple(selected_contours), centerpoints_list))
+            thread = Thread(target=self.__display_images, args=(im, thresh_im, tuple(selected_contours), centerpoints))
             thread.start()
 
-        return centerpoints_list
+        return list(centerpoints)
 
     def __find_contour_center(self, contour: np.ndarray) -> tuple[int, int] | None:
         M = cv2.moments(contour)
@@ -85,17 +70,11 @@ class CenterpointCalculator:
             cv2.circle(points_img, i, 2, (0, 0, 255), -1)
             cv2.circle(marked_og_img, i, 2, (0, 0, 255), -1)
 
-        # make new image with lines drawn between ordered points
-        pts = np.array(centerpoints, np.int32)
-        shape_img = np.zeros((im_height, im_width, 3), np.uint8)
-        cv2.polylines(shape_img, [pts], True, (0, 255, 255))
-
         # display images
         cv2.imshow("Original image", og_img)
         cv2.imshow("Processed image", processed_img)
         cv2.imshow('Selected contours', contour_img)
         cv2.imshow("Detected points", points_img)
         cv2.imshow("Marked-up original image", marked_og_img)
-        cv2.imshow("Point shape", shape_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
