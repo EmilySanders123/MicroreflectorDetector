@@ -22,6 +22,7 @@ else:
     img_centerpoints = calc.get_centerpoints(args.path, False)
 
 # normalize x points
+# TODO: IT NO WORK, BAD IDEA IN EVERY WAY
 x_list = [point[0] for point in img_centerpoints]
 x_max = max(x_list)
 x_min = min(x_list)
@@ -84,7 +85,7 @@ elif args.action.lower() == "match":
     new_stars_percent_list = []
 
     # iterate through each entry in the list of stored constellations
-    for i, entry_list in enumerate(point_obj_list):
+    for entry_list in point_obj_list:
         candidate_points = norm_img_centerpoints.copy()
         matches = []
 
@@ -93,7 +94,6 @@ elif args.action.lower() == "match":
         points_img[:, :] = [255, 255, 255]
 
         # check each point in reference constellation
-        ref_list = entry_list["points"].copy()
         for ref_point in entry_list["points"]:
             curr_x = float(ref_point[0])
             curr_y = float(ref_point[1])
@@ -107,14 +107,13 @@ elif args.action.lower() == "match":
                 new_x = float(new_point[0])
                 new_y = float(new_point[1])
 
-                # check if new point is within 10 pixel radius of reference point
-                if pow((curr_x - new_x), 2) + pow((curr_y - new_y), 2) <= pow(10, 2):
+                # check if new point is within 10 pixel radius of reference point and has not already been matched
+                if pow((curr_x - new_x), 2) + pow((curr_y - new_y), 2) <= pow(10, 2) and new_point in candidate_points:
                     # add matched new point to list of matches
                     matches.append((new_x, new_y))
 
-                    # remove both new and reference points from lists so that they cannot be matched again
+                    # remove new point from list so that they cannot be matched again
                     candidate_points.remove(new_point)
-                    ref_list.remove(ref_point)
 
                     # draw matched new point on image
                     cv2.circle(points_img, center=(int(new_x), int(new_y)), radius=2, color=(255, 255, 0), thickness=-1)
