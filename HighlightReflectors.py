@@ -99,7 +99,7 @@ elif args.action.lower() == "match":
             curr_y = float(ref_point[1])
 
             # draw circles around reference point
-            cv2.circle(points_img, center=(int(curr_x), int(curr_y)), radius=2, color=(0, 0, 255), thickness=-1)
+            cv2.circle(points_img, center=(int(curr_x), int(curr_y)), radius=2, color=(0, 0, 0), thickness=-1)
             cv2.circle(points_img, center=(int(curr_x), int(curr_y)), radius=10, color=(0, 255, 0), thickness=1)
 
             # check if each new point matches
@@ -117,10 +117,13 @@ elif args.action.lower() == "match":
                     ref_list.remove(ref_point)
 
                     # draw matched new point on image
-                    cv2.circle(points_img, center=(int(new_x), int(new_y)), radius=2, color=(255, 0, 0), thickness=-1)
+                    cv2.circle(points_img, center=(int(new_x), int(new_y)), radius=2, color=(255, 255, 0), thickness=-1)
 
-                    # skip to next point
+                    # skip to next ref point
                     break
+
+        for unmatched_pt in candidate_points:
+            cv2.circle(points_img, center=(int(unmatched_pt[0]), int(unmatched_pt[1])), radius=2, color=(0, 0, 255), thickness=-1)
 
         # record overall percentage of new points and reference points that were matched
         percent_ref_stars_matched = len(matches) / len(entry_list["points"]) * 100
