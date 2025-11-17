@@ -21,17 +21,20 @@ if args.action == "test":
 else:
     img_centerpoints = calc.get_centerpoints(args.path, False)
 
-# normalize x points
-# TODO: IT NO WORK, BAD IDEA IN EVERY WAY
 x_list = [point[0] for point in img_centerpoints]
+y_list = [point[1] for point in img_centerpoints]
 x_max = max(x_list)
 x_min = min(x_list)
-x_list_normalized = [(val - x_min) / (x_max - x_min) * 480 + 10 for val in x_list]
-# normalize y points
-y_list = [point[1] for point in img_centerpoints]
+x_range = x_max - x_min
 y_max = max(y_list)
 y_min = min(y_list)
-y_list_normalized = [(val - y_min) / (y_max - y_min) * 480 + 10 for val in y_list]
+y_range = y_max - y_min
+
+max_range = max(x_range, y_range)
+
+# normalize x and y points according to smaller range
+x_list_normalized = [(val - x_min) / max_range * 480 + 10 for val in x_list]
+y_list_normalized = [(val - y_min) / max_range * 480 + 10 for val in y_list]
 norm_img_centerpoints = list(zip(x_list_normalized, y_list_normalized))
 
 # take action indicated by command-line argument
@@ -155,6 +158,34 @@ elif args.action.lower() == "match":
             print("ID with best match: " + max_ref_match[0])
         else:
             print("No matches found.")
+
+elif args.action.lower() == "display":
+    try:
+        with open("StorageJSON.json", "r") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        print("Points file not found.")
+        exit(0)
+    except json.decoder.JSONDecodeError:
+        print("Could not parse JSON file format.  The file may be corrupted.")
+        exit(0)
+
+    point_obj_list = data["stored_graphs"]
+
+    for obj in point_obj_list:
+        if obj["id"] == args.id:
+            # draw all centerpoints on a new image
+            display_img = np.zeros((500, 500, 3), np.uint8)
+            display_img[:, :] = [255, 255, 255]
+            for i in obj["points"]:
+                print(i)
+                cv2.circle(display_img, (int(i[0]), int(i[1])), 2, (0, 0, 255), -1)
+
+            cv2.imshow("Chosen image", display_img)
+            cv2.waitKey(0)
+            exit(0)
+
+    print("Entry with id " + args.id + " not found.")
 
 elif args.action.lower() == "test":
     pass
