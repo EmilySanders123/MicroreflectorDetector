@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+from operator import itemgetter
 from sys import displayhook
 
 import cv2
@@ -81,36 +82,119 @@ elif args.action.lower() == "match":
         print("Could not parse JSON file format.  The file may be corrupted.")
         exit(0)
 
+    # store reference points in list
     point_obj_list = data["stored_graphs"]
 
-    # create image of new points
-    pts = np.array(norm_img_centerpoints, np.int32)
-    new_img = np.zeros((500, 500, 3), np.uint8)
-    cv2.polylines(new_img, [pts], True, (0, 255, 255))
+    # stores percentage of reference stars matched and new stars matched, respectively
+    ref_stars_percent_list = []
+    new_stars_percent_list = []
 
-    orb = cv2.ORB_create()
-    for obj in point_obj_list:
-        # TODO: try to match points
+    ref_point_neighbors = {}
+    for point_index, point in enumerate(norm_img_centerpoints):
+        print("point analyzed: " + str(point))
+        np_norm_img_centerpoints = np.array(norm_img_centerpoints)
+        np_point = np.array(point)
+        distances = np.linalg.norm(np_norm_img_centerpoints - np_point, axis=1)
 
-        # make new image with lines drawn between ordered points
-        pts = np.array(obj["points"], np.int32)
-        shape_img = np.zeros((500, 500, 3), np.uint8)
-        cv2.polylines(shape_img, [pts], True, (0, 255, 255))
-        cv2.imshow(f"Stored point ID: {obj["id"]}", shape_img)
+        # TODO: account for < 4 stars total
+        # remove current ref point from list (always has same index as current point)
+        np_norm_img_centerpoints = np.delete(np_norm_img_centerpoints, point_index, axis=0)
+        distances = np.delete(distances, point_index)
 
-        # compute matches between images
-        new_keypoints, new_descriptors = orb.detectAndCompute(new_img, None)
-        stored_keypoints, stored_descriptors = orb.detectAndCompute(shape_img, None)
-        matcher = cv2.BFMatcher()
-        matches = matcher.match(new_descriptors, stored_descriptors)
+        # save and then remove first closest point
+        first_closest_index = np.argmin(distances)
+        first_closest_point = norm_img_centerpoints[first_closest_index]
+        np_norm_img_centerpoints = np.delete(np_norm_img_centerpoints, first_closest_index, axis=0)
+        distances = np.delete(distances, first_closest_index)
+        print(str(np_norm_img_centerpoints))
 
-        # show matches
-        final_img = cv2.drawMatches(new_img, new_keypoints, shape_img, stored_keypoints, matches[:20], None)
-        final_img = cv2.resize(final_img, (1000, 650))
+        # save and then remove second closest point
+        second_closest_index = np.argmin(distances)
+        second_closest_point = norm_img_centerpoints[second_closest_index]
+        np_norm_img_centerpoints = np.delete(np_norm_img_centerpoints, second_closest_index, axis=0)
+        distances = np.delete(distances, second_closest_index)
+        print(str(np_norm_img_centerpoints))
 
-        cv2.imshow(f"Comparison with ID {obj["id"]}", final_img)
+        #save third closest point
+        third_closest_index = np.argmin(distances)
+        third_closest_point = norm_img_centerpoints[third_closest_index]
+
+        ref_point_neighbors[point] = [first_closest_point, second_closest_point, third_closest_point]
+        print("three closest points: " + str(ref_point_neighbors[point]))
+
+    print(ref_point_neighbors)
+
+    # iterate through each entry in the list of stored constellations
+    for entry_list in point_obj_list:
+        candidate_points = norm_img_centerpoints.copy()
+        matches = []
+
+        # blank image to show which points are matched
+        points_img = np.zeros((500, 500, 3), np.uint8)
+        points_img[:, :] = [255, 255, 255]
+
+        # check each point in reference constellation
+        for ref_point in entry_list["points"]:
+            curr_x = float(ref_point[0])
+            curr_y = float(ref_point[1])
+
+            # draw circles around reference point
+            cv2.circle(points_img, center=(int(curr_x), int(curr_y)), radius=2, color=(0, 0, 0), thickness=-1)
+            cv2.circle(points_img, center=(int(curr_x), int(curr_y)), radius=10, color=(0, 255, 0), thickness=1)
+
+            # check if each new point matches
+            for new_point in norm_img_centerpoints:
+                new_x = float(new_point[0])
+                new_y = float(new_point[1])
+
+                # check if new point is within 10 pixel radius of reference point and has not already been matched
+                if pow((curr_x - new_x), 2) + pow((curr_y - new_y), 2) <= pow(10, 2) and new_point in candidate_points:
+                    # add matched new point to list of matches
+                    matches.append((new_x, new_y))
+
+                    # remove new point from list so that they cannot be matched again
+                    candidate_points.remove(new_point)
+
+                    # draw matched new point on image
+                    cv2.circle(points_img, center=(int(new_x), int(new_y)), radius=2, color=(255, 255, 0), thickness=-1)
+
+                    # skip to next ref point
+                    break
+
+        for unmatched_pt in candidate_points:
+            cv2.circle(points_img, center=(int(unmatched_pt[0]), int(unmatched_pt[1])), radius=2, color=(0, 0, 255), thickness=-1)
+
+        # record overall percentage of new points and reference points that were matched
+        percent_ref_stars_matched = len(matches) / len(entry_list["points"]) * 100
+        percent_new_stars_matched = len(matches) / len(norm_img_centerpoints) * 100
+        ref_stars_percent_list.append((entry_list["id"], percent_ref_stars_matched))
+        new_stars_percent_list.append((entry_list["id"], percent_new_stars_matched))
+
+        print("Point cloud " + entry_list["id"] + ":")
+        print("Matches: " + str(len(matches)))
+        print("Percent of new stars matched: " + str(percent_new_stars_matched) + "%")
+        print("Percent of reference stars matched: " + str(percent_ref_stars_matched) + "%\n")
+
+        cv2.imshow("Matches found", points_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+    # the percentages of new stars with a match and reference stars with a match must both be at least 75%
+    high_new_match_list = [i for i in new_stars_percent_list if i[1] >= 75]
+    if len(high_new_match_list) == 0:
+        # there are no matches over 75%
+        print("No matches found.")
+    else:
+        # there is at least one match
+        # tiebreak with the highest percent of reference stars matched
+        # if that is the same as well, then just pick whichever
+        ref_match_list = [ref_percent_tuple for ref_percent_tuple in ref_stars_percent_list if ref_percent_tuple[0] in
+                          ([new_percent_tuple[0] for new_percent_tuple in high_new_match_list])]
+        max_ref_match = max(ref_match_list, key=itemgetter(1))
+        if max_ref_match[1] >= 75:
+            print("ID with best match: " + max_ref_match[0])
+        else:
+            print("No matches found.")
 
 elif args.action.lower() == "display":
     try:
