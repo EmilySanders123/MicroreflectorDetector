@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from CenterpointCalculator import CenterpointCalculator
-
+from RatioCalculator import RatioCalculator
 
 # get command-line arguments
 parser = argparse.ArgumentParser(description="Highlights microreflectors in images of secure text/dendrites")
@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 # calculate and store centerpoints for specified image
 calc = CenterpointCalculator()
-if args.action == "store" or args.action == "match" or args.action == "display":
+if args.action == "store" or args.action == "match" or args.action == "display" or args.action == "test_ratio":
     img_centerpoints = calc.get_centerpoints(args.path, False)
 else:
     img_centerpoints = calc.get_centerpoints(args.path, True)
@@ -88,41 +88,6 @@ elif args.action.lower() == "match":
     # stores percentage of reference stars matched and new stars matched, respectively
     ref_stars_percent_list = []
     new_stars_percent_list = []
-
-    ref_point_neighbors = {}
-    for point_index, point in enumerate(norm_img_centerpoints):
-        print("point analyzed: " + str(point))
-        np_norm_img_centerpoints = np.array(norm_img_centerpoints)
-        np_point = np.array(point)
-        distances = np.linalg.norm(np_norm_img_centerpoints - np_point, axis=1)
-
-        # TODO: account for < 4 stars total
-        # remove current ref point from list (always has same index as current point)
-        np_norm_img_centerpoints = np.delete(np_norm_img_centerpoints, point_index, axis=0)
-        distances = np.delete(distances, point_index)
-
-        # save and then remove first closest point
-        first_closest_index = np.argmin(distances)
-        first_closest_point = norm_img_centerpoints[first_closest_index]
-        np_norm_img_centerpoints = np.delete(np_norm_img_centerpoints, first_closest_index, axis=0)
-        distances = np.delete(distances, first_closest_index)
-        print(str(np_norm_img_centerpoints))
-
-        # save and then remove second closest point
-        second_closest_index = np.argmin(distances)
-        second_closest_point = norm_img_centerpoints[second_closest_index]
-        np_norm_img_centerpoints = np.delete(np_norm_img_centerpoints, second_closest_index, axis=0)
-        distances = np.delete(distances, second_closest_index)
-        print(str(np_norm_img_centerpoints))
-
-        #save third closest point
-        third_closest_index = np.argmin(distances)
-        third_closest_point = norm_img_centerpoints[third_closest_index]
-
-        ref_point_neighbors[point] = [first_closest_point, second_closest_point, third_closest_point]
-        print("three closest points: " + str(ref_point_neighbors[point]))
-
-    print(ref_point_neighbors)
 
     # iterate through each entry in the list of stored constellations
     for entry_list in point_obj_list:
@@ -226,5 +191,29 @@ elif args.action.lower() == "display":
 
 elif args.action.lower() == "test":
     pass
+
+elif args.action.lower() == "test_ratio":
+    ratioCalc = RatioCalculator()
+    ref_point_neighbors = {}
+    for point_index, point in enumerate(norm_img_centerpoints):
+        ref_point_neighbors[point] = ratioCalc.closest_three_points(point_index, norm_img_centerpoints)
+        print("three closest points: " + str(ref_point_neighbors[point]))
+
+    for point, neighbors in ref_point_neighbors.items():
+        display_img = np.zeros((500, 500, 3), np.uint8)
+        display_img[:, :] = [255, 255, 255]
+        for all_point in norm_img_centerpoints:
+            cv2.circle(display_img, (int(all_point[0]), int(all_point[1])), 3, (0, 0, 0), -1)
+
+        for neighbor_point in neighbors:
+            cv2.line(display_img, (int(point[0]), int(point[1])), (int(neighbor_point[0]), int(neighbor_point[1])), (0, 0, 0), 1)
+            cv2.circle(display_img, (int(neighbor_point[0]), int(neighbor_point[1])), 3, (0, 150, 15), -1)
+
+        cv2.circle(display_img, (int(point[0]), int(point[1])), 3, (0, 0, 255), -1)
+
+        cv2.imshow("Closest points to " + str(point), display_img)
+        cv2.waitKey(0)
+
+        # FORMAT: ref_point_ratios[point] = [(first_dist/second_dist, angle between first and second), (first_dist/third_dist, angle between first and third), (second_dist/third_dist, angle between second and third)]
 else:
     print("Invalid action")

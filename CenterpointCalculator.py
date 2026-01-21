@@ -85,17 +85,11 @@ class CenterpointCalculator:
             cv2.circle(points_img, i, 2, (0, 0, 255), -1)
             cv2.circle(marked_og_img, i, 2, (0, 0, 255), -1)
 
-        # make new image with lines drawn between ordered points
-        pts = np.array(centerpoints, np.int32)
-        shape_img = np.zeros((im_height, im_width, 3), np.uint8)
-        cv2.polylines(shape_img, [pts], True, (0, 255, 255))
-
         # display images
         cv2.imshow("Original image", og_img)
         cv2.imshow("Processed image", processed_img)
         cv2.imshow('Selected contours', contour_img)
         cv2.imshow("Detected points", points_img)
         cv2.imshow("Marked-up original image", marked_og_img)
-        cv2.imshow("Point shape", shape_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
