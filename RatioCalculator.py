@@ -1,3 +1,6 @@
+import math
+
+import cv2
 import numpy as np
 
 
@@ -6,7 +9,37 @@ class RatioCalculator:
         # placeholder
         pass
 
-    def closest_three_points(self, point_index: int, point_list: list[tuple[int, int]]):
+    def generate_constellation_ratios(self, centerpoints_list: list[tuple[int, int]], draw=False) -> dict:
+        ref_point_neighbors = {}
+        ref_point_ratios = {}
+        for point_index, point in enumerate(centerpoints_list):
+            ref_point_neighbors[point] = self.__closest_three_points(point_index, centerpoints_list)
+            print("three closest points: " + str(ref_point_neighbors[point]))
+
+            ref_point_ratios[point] = self.__generate_point_ratios(point, ref_point_neighbors[point])
+            print("ratios: " + str(ref_point_ratios[point]))
+
+        if draw:
+            # display closest three points to each point
+            for point, neighbors in ref_point_neighbors.items():
+                display_img = np.zeros((500, 500, 3), np.uint8)
+                display_img[:, :] = [255, 255, 255]
+                for all_point in centerpoints_list:
+                    cv2.circle(display_img, (int(all_point[0]), int(all_point[1])), 3, (0, 0, 0), -1)
+
+                for neighbor_point in neighbors:
+                    cv2.line(display_img, (int(point[0]), int(point[1])),
+                             (int(neighbor_point[0]), int(neighbor_point[1])), (0, 0, 0), 1)
+                    cv2.circle(display_img, (int(neighbor_point[0]), int(neighbor_point[1])), 3, (0, 150, 15), -1)
+
+                cv2.circle(display_img, (int(point[0]), int(point[1])), 3, (0, 0, 255), -1)
+
+                cv2.imshow("Closest points to " + str(point), display_img)
+                cv2.waitKey(0)
+
+        return ref_point_ratios
+
+    def __closest_three_points(self, point_index: int, point_list: list[tuple[int, int]]):
         curr_point = point_list[point_index]
         print("point analyzed: " + str(curr_point))
         np_norm_img_centerpoints = np.array(point_list)
@@ -38,3 +71,21 @@ class RatioCalculator:
         third_closest_distance = distances[third_closest_index]
 
         return [closest_point, second_closest_point, third_closest_point]
+
+    def __generate_point_ratios(self, centerpoint: tuple[float, float], neighbors: list[tuple[float, float]]):
+        center_to_first_dist = math.sqrt((neighbors[0][0] - centerpoint[0]) ** 2 + (neighbors[0][1] - centerpoint[1]) ** 2)
+        center_to_second_dist = math.sqrt((neighbors[1][0] - centerpoint[0]) ** 2 + (neighbors[1][1] - centerpoint[1]) ** 2)
+        center_to_third_dist = math.sqrt((neighbors[2][0] - centerpoint[0]) ** 2 + (neighbors[2][1] - centerpoint[1]) ** 2)
+        first_to_second_dist = math.sqrt((neighbors[0][0] - neighbors[1][0]) ** 2 + (neighbors[0][1] - neighbors[1][1]) ** 2)
+        first_to_third_dist = math.sqrt((neighbors[0][0] - neighbors[2][0]) ** 2 + (neighbors[0][1] - neighbors[2][1]) ** 2)
+        second_to_third_dist = math.sqrt((neighbors[1][0] - neighbors[2][0]) ** 2 + (neighbors[1][1] - neighbors[2][1]) ** 2)
+
+        first_over_second_dist = center_to_first_dist / center_to_second_dist
+        first_over_third_dist = center_to_first_dist / center_to_third_dist
+        second_over_third_dist = center_to_second_dist / center_to_third_dist
+
+        first_to_second_angle = math.acos((center_to_first_dist ** 2 + center_to_second_dist ** 2 - first_to_second_dist ** 2) / (2 * center_to_first_dist * center_to_second_dist))
+        first_to_third_angle = math.acos((center_to_first_dist ** 2 + center_to_third_dist ** 2 - first_to_third_dist ** 2) / (2 * center_to_first_dist * center_to_third_dist))
+        second_to_third_angle = math.acos((center_to_second_dist ** 2 + center_to_third_dist ** 2 - second_to_third_dist ** 2) / (2 * center_to_second_dist * center_to_third_dist))
+
+        return [(first_over_second_dist, first_to_second_angle), (first_over_third_dist, first_to_third_angle), (second_over_third_dist,  second_to_third_angle), (second_to_third_dist, second_to_third_angle)]

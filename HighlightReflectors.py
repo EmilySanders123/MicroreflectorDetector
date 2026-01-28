@@ -194,25 +194,7 @@ elif args.action.lower() == "test":
 
 elif args.action.lower() == "test_ratio":
     ratioCalc = RatioCalculator()
-    ref_point_neighbors = {}
-    for point_index, point in enumerate(norm_img_centerpoints):
-        ref_point_neighbors[point] = ratioCalc.closest_three_points(point_index, norm_img_centerpoints)
-        print("three closest points: " + str(ref_point_neighbors[point]))
-
-    for point, neighbors in ref_point_neighbors.items():
-        display_img = np.zeros((500, 500, 3), np.uint8)
-        display_img[:, :] = [255, 255, 255]
-        for all_point in norm_img_centerpoints:
-            cv2.circle(display_img, (int(all_point[0]), int(all_point[1])), 3, (0, 0, 0), -1)
-
-        for neighbor_point in neighbors:
-            cv2.line(display_img, (int(point[0]), int(point[1])), (int(neighbor_point[0]), int(neighbor_point[1])), (0, 0, 0), 1)
-            cv2.circle(display_img, (int(neighbor_point[0]), int(neighbor_point[1])), 3, (0, 150, 15), -1)
-
-        cv2.circle(display_img, (int(point[0]), int(point[1])), 3, (0, 0, 255), -1)
-
-        cv2.imshow("Closest points to " + str(point), display_img)
-        cv2.waitKey(0)
+    ref_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints, draw=True)
 
         # FORMAT: ref_point_ratios[point] = [(first_dist/second_dist, angle between first and second), (first_dist/third_dist, angle between first and third), (second_dist/third_dist, angle between second and third)]
 else:
