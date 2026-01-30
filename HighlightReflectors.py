@@ -40,6 +40,10 @@ x_list_normalized = [(val - x_min) / max_range * 480 + 10 for val in x_list]
 y_list_normalized = [(val - y_min) / max_range * 480 + 10 for val in y_list]
 norm_img_centerpoints = list(zip(x_list_normalized, y_list_normalized))
 
+# calculate ratios between all points
+ratioCalc = RatioCalculator()
+ref_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints)
+
 # take action indicated by command-line argument
 # store point set in database
 # TODO: store more info
@@ -51,7 +55,8 @@ if args.action.lower() == "store":
             data = json.load(file)
             id_list = [item.get("id") for item in data["stored_graphs"]]
             if args.id not in id_list:
-                new_point_obj = {"id": args.id, "points": norm_img_centerpoints}
+                new_point_obj = {"id": args.id, "point_ratios": ref_point_ratios}
+
                 data["stored_graphs"].append(new_point_obj)
                 print("Point data added.")
             else:
@@ -59,11 +64,13 @@ if args.action.lower() == "store":
             file.seek(0)
             json.dump(data, file, indent=4)
 
+    # make new database file if one is not found
     except FileNotFoundError:
         print("File not found.  Adding point data to newly created file...")
         data = {"stored_graphs": []}
-        new_point_obj = {"id": args.id, "points": norm_img_centerpoints}
+        new_point_obj = {"id": args.id, "point_ratios": ref_point_ratios}
         data["stored_graphs"].append(new_point_obj)
+        print(data)
         with open("StorageJSON.json", "w") as file:
             json.dump(data, file, indent=4)
         print("Point data added.")
