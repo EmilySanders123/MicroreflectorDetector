@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import ast
 import json
 from operator import itemgetter
 from sys import displayhook
@@ -203,6 +204,6 @@ elif args.action.lower() == "test_ratio":
     ratioCalc = RatioCalculator()
     ref_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints, draw=True)
 
-        # FORMAT: ref_point_ratios[point] = [(first_dist/second_dist, angle between first and second), (first_dist/third_dist, angle between first and third), (second_dist/third_dist, angle between second and third)]
+        # FORMAT: ref_point_ratios[point] = [(point_x, point_y), (first_dist/second_dist, angle between first and second), (first_dist/third_dist, angle between first and third), (second_dist/third_dist, angle between second and third)]
 else:
     print("Invalid action")

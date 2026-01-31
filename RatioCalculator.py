@@ -9,15 +9,14 @@ class RatioCalculator:
         # placeholder
         pass
 
-    def generate_constellation_ratios(self, centerpoints_list: list[tuple[int, int]], draw=False) -> dict:
+    def generate_constellation_ratios(self, centerpoints_list: list[tuple[int, int]], draw=False) -> list:
         ref_point_neighbors = {}
-        ref_point_ratios = {}
+        ref_point_ratios = []
         for point_index, point in enumerate(centerpoints_list):
             ref_point_neighbors[point] = self.__closest_three_points(point_index, centerpoints_list)
-            print("three closest points: " + str(ref_point_neighbors[point]))
 
-            ref_point_ratios[str(point)] = self.__generate_point_ratios(point, ref_point_neighbors[point])
-            print("ratios: " + str(ref_point_ratios[str(point)]))
+            ref_point_ratios.append(self.__generate_point_ratios(point, ref_point_neighbors[point]))
+            print("ratios: " + str(ref_point_ratios))
 
         if draw:
             # display closest three points to each point
@@ -88,4 +87,4 @@ class RatioCalculator:
         first_to_third_angle = math.acos((center_to_first_dist ** 2 + center_to_third_dist ** 2 - first_to_third_dist ** 2) / (2 * center_to_first_dist * center_to_third_dist))
         second_to_third_angle = math.acos((center_to_second_dist ** 2 + center_to_third_dist ** 2 - second_to_third_dist ** 2) / (2 * center_to_second_dist * center_to_third_dist))
 
-        return [(first_over_second_dist, first_to_second_angle), (first_over_third_dist, first_to_third_angle), (second_over_third_dist,  second_to_third_angle)]
+        return [centerpoint, (first_over_second_dist, first_to_second_angle), (first_over_third_dist, first_to_third_angle), (second_over_third_dist,  second_to_third_angle)]
