@@ -4,10 +4,13 @@ import ast
 import json
 from operator import itemgetter
 from sys import displayhook
+from types import new_class
 
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from fontTools.misc.bezierTools import segmentPointAtT
+
 from CenterpointCalculator import CenterpointCalculator
 from RatioCalculator import RatioCalculator
 
@@ -43,7 +46,7 @@ norm_img_centerpoints = list(zip(x_list_normalized, y_list_normalized))
 
 # calculate ratios between all points
 ratioCalc = RatioCalculator()
-ref_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints)
+new_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints)
 
 # take action indicated by command-line argument
 # store point set in database
@@ -56,7 +59,7 @@ if args.action.lower() == "store":
             data = json.load(file)
             id_list = [item.get("id") for item in data["stored_graphs"]]
             if args.id not in id_list:
-                new_point_obj = {"id": args.id, "point_ratios": ref_point_ratios}
+                new_point_obj = {"id": args.id, "point_ratios": new_point_ratios}
 
                 data["stored_graphs"].append(new_point_obj)
                 print("Point data added.")
@@ -69,9 +72,8 @@ if args.action.lower() == "store":
     except FileNotFoundError:
         print("File not found.  Adding point data to newly created file...")
         data = {"stored_graphs": []}
-        new_point_obj = {"id": args.id, "point_ratios": ref_point_ratios}
+        new_point_obj = {"id": args.id, "point_ratios": new_point_ratios}
         data["stored_graphs"].append(new_point_obj)
-        print(data)
         with open("StorageJSON.json", "w") as file:
             json.dump(data, file, indent=4)
         print("Point data added.")
@@ -91,64 +93,71 @@ elif args.action.lower() == "match":
         exit(0)
 
     # store reference points in list
-    point_obj_list = data["stored_graphs"]
+    ref_constellation_obj_list = data["stored_graphs"]
 
     # stores percentage of reference stars matched and new stars matched, respectively
     ref_stars_percent_list = []
     new_stars_percent_list = []
 
     # iterate through each entry in the list of stored constellations
-    for entry_list in point_obj_list:
-        candidate_points = norm_img_centerpoints.copy()
+    for ref_constellation_entry in ref_constellation_obj_list:
+        candidate_new_points = new_point_ratios.copy()
+        candidate_ref_points = ref_constellation_entry["point_ratios"].copy()
         matches = []
 
-        # blank image to show which points are matched
-        points_img = np.zeros((500, 500, 3), np.uint8)
-        points_img[:, :] = [255, 255, 255]
+        # TODO: better drawings
+        # blank images to show which points are matched
+        new_points_img = np.zeros((500, 500, 3), np.uint8)
+        new_points_img[:, :] = [255, 255, 255]
+        ref_points_img = np.zeros((500, 500, 3), np.uint8)
+        ref_points_img[:, :] = [255, 255, 255]
+        separator_bar = np.zeros((500, 5, 3), np.uint8)
+        separator_bar[:, :] = [0, 0, 0]
 
-        # check each point in reference constellation
-        for ref_point in entry_list["points"]:
-            curr_x = float(ref_point[0])
-            curr_y = float(ref_point[1])
+        # check each point in reference constellations
+        for ref_ratio_list in ref_constellation_entry["point_ratios"]:
+            # compare against each point in new constellation
+            for new_ratio_list in candidate_new_points:
+                ratio_matches = 0
+                for ref_ratio in ref_ratio_list[1:4]:
+                        for new_ratio in new_ratio_list[1:4]:
+                            # print("Comparing new ratio " + str(new_ratio) + " with ref ratio " + str(ref_ratio))
+                            # TODO: tune tolerances
+                            if abs(ref_ratio[0] - new_ratio[0]) <= .0005 and abs(ref_ratio[1] - new_ratio[1]) <= .0005:
+                                ratio_matches += 1
 
-            # draw circles around reference point
-            cv2.circle(points_img, center=(int(curr_x), int(curr_y)), radius=2, color=(0, 0, 0), thickness=-1)
-            cv2.circle(points_img, center=(int(curr_x), int(curr_y)), radius=10, color=(0, 255, 0), thickness=1)
-
-            # check if each new point matches
-            for new_point in norm_img_centerpoints:
-                new_x = float(new_point[0])
-                new_y = float(new_point[1])
-
-                # check if new point is within 10 pixel radius of reference point and has not already been matched
-                if pow((curr_x - new_x), 2) + pow((curr_y - new_y), 2) <= pow(10, 2) and new_point in candidate_points:
-                    # add matched new point to list of matches
-                    matches.append((new_x, new_y))
-
-                    # remove new point from list so that they cannot be matched again
-                    candidate_points.remove(new_point)
-
+                if ratio_matches == 3:
+                    matches.append(new_ratio_list)
+                    candidate_new_points.remove(new_ratio_list)
+                    candidate_ref_points.remove(ref_ratio_list)
                     # draw matched new point on image
-                    cv2.circle(points_img, center=(int(new_x), int(new_y)), radius=2, color=(255, 255, 0), thickness=-1)
+                    cv2.circle(new_points_img, center=(int(new_ratio_list[0][0]), int(new_ratio_list[0][1])), radius=2, color=(10, 150, 0), thickness=-1)
+                    cv2.circle(ref_points_img, center=(int(ref_ratio_list[0][0]), int(ref_ratio_list[0][1])), radius=2, color=(10, 150, 0), thickness=-1)
 
-                    # skip to next ref point
-                    break
+        for unmatched_pt in candidate_new_points:
+            cv2.circle(new_points_img, center=(int(unmatched_pt[0][0]), int(unmatched_pt[0][1])), radius=2, color=(0, 0, 255), thickness=-1)
+        cv2.putText(new_points_img, "New points", (20, 20), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1, cv2.LINE_AA)
 
-        for unmatched_pt in candidate_points:
-            cv2.circle(points_img, center=(int(unmatched_pt[0]), int(unmatched_pt[1])), radius=2, color=(0, 0, 255), thickness=-1)
+        for unmatched_pt in candidate_ref_points:
+            cv2.circle(ref_points_img, center=(int(unmatched_pt[0][0]), int(unmatched_pt[0][1])), radius=2, color=(0, 0, 255), thickness=-1)
+        cv2.putText(ref_points_img, "Ref points", (20, 20), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1, cv2.LINE_AA)
+
+        double_image = np.concatenate((new_points_img, separator_bar, ref_points_img), axis=1)
 
         # record overall percentage of new points and reference points that were matched
-        percent_ref_stars_matched = len(matches) / len(entry_list["points"]) * 100
+        percent_ref_stars_matched = len(matches) / len(ref_constellation_entry["point_ratios"]) * 100
         percent_new_stars_matched = len(matches) / len(norm_img_centerpoints) * 100
-        ref_stars_percent_list.append((entry_list["id"], percent_ref_stars_matched))
-        new_stars_percent_list.append((entry_list["id"], percent_new_stars_matched))
+        ref_stars_percent_list.append((ref_constellation_entry["id"], percent_ref_stars_matched))
+        new_stars_percent_list.append((ref_constellation_entry["id"], percent_new_stars_matched))
 
-        print("Point cloud " + entry_list["id"] + ":")
+        print("Point cloud " + ref_constellation_entry["id"] + ":")
+        print("Number of new stars: " + str(len(norm_img_centerpoints)))
+        print("Number of ref stars: " + str(len(ref_constellation_entry["point_ratios"])))
         print("Matches: " + str(len(matches)))
         print("Percent of new stars matched: " + str(percent_new_stars_matched) + "%")
         print("Percent of reference stars matched: " + str(percent_ref_stars_matched) + "%\n")
 
-        cv2.imshow("Matches found", points_img)
+        cv2.imshow("Matches found", double_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
@@ -180,9 +189,9 @@ elif args.action.lower() == "display":
         print("Could not parse JSON file format.  The file may be corrupted.")
         exit(0)
 
-    point_obj_list = data["stored_graphs"]
+    ref_constellation_obj_list = data["stored_graphs"]
 
-    for obj in point_obj_list:
+    for obj in ref_constellation_obj_list:
         if obj["id"] == args.id:
             # draw all centerpoints on a new image
             display_img = np.zeros((500, 500, 3), np.uint8)
@@ -202,7 +211,7 @@ elif args.action.lower() == "test":
 
 elif args.action.lower() == "test_ratio":
     ratioCalc = RatioCalculator()
-    ref_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints, draw=True)
+    new_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints, draw=True)
 
         # FORMAT: ref_point_ratios[point] = [(point_x, point_y), (first_dist/second_dist, angle between first and second), (first_dist/third_dist, angle between first and third), (second_dist/third_dist, angle between second and third)]
 else:

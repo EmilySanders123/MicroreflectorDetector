@@ -16,7 +16,6 @@ class RatioCalculator:
             ref_point_neighbors[point] = self.__closest_three_points(point_index, centerpoints_list)
 
             ref_point_ratios.append(self.__generate_point_ratios(point, ref_point_neighbors[point]))
-            print("ratios: " + str(ref_point_ratios))
 
         if draw:
             # display closest three points to each point
@@ -40,7 +39,6 @@ class RatioCalculator:
 
     def __closest_three_points(self, point_index: int, point_list: list[tuple[int, int]]):
         curr_point = point_list[point_index]
-        print("point analyzed: " + str(curr_point))
         np_norm_img_centerpoints = np.array(point_list)
         np_point = np.array(curr_point)
         distances = np.linalg.norm(np_norm_img_centerpoints - np_point, axis=1)
