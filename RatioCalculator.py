@@ -9,7 +9,11 @@ class RatioCalculator:
         # placeholder
         pass
 
-    def generate_constellation_ratios(self, centerpoints_list: list[tuple[int, int]], draw=False) -> list:
+    def generate_constellation_ratios(self, centerpoints_list: list[tuple[int, int]], draw=False) -> list | None:
+        # kick out if less than 4 points found (unlikely to happen)
+        if len(centerpoints_list) < 4:
+            return None
+
         ref_point_neighbors = {}
         ref_point_ratios = []
         for point_index, point in enumerate(centerpoints_list):
@@ -37,13 +41,12 @@ class RatioCalculator:
 
         return ref_point_ratios
 
-    def __closest_three_points(self, point_index: int, point_list: list[tuple[int, int]]):
+    def __closest_three_points(self, point_index: int, point_list: list[tuple[int, int]]) -> tuple[int, int]:
         curr_point = point_list[point_index]
         np_norm_img_centerpoints = np.array(point_list)
         np_point = np.array(curr_point)
         distances = np.linalg.norm(np_norm_img_centerpoints - np_point, axis=1)
 
-        # TODO: account for < 4 stars total
         # remove current ref point from list (always has same index as current point)
         np_norm_img_centerpoints = np.delete(np_norm_img_centerpoints, point_index, axis=0)
         distances = np.delete(distances, point_index)
