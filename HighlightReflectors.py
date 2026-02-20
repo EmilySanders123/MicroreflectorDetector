@@ -48,6 +48,11 @@ norm_img_centerpoints = list(zip(x_list_normalized, y_list_normalized))
 ratioCalc = RatioCalculator()
 new_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints)
 
+# end process if too few points were found to create ratios
+if new_point_ratios is None:
+    print("Too few points were found.  Please adjust angle and try again.")
+    exit(0)
+
 # take action indicated by command-line argument
 # store point set in database
 # TODO: store more info
@@ -105,7 +110,6 @@ elif args.action.lower() == "match":
         candidate_ref_points = ref_constellation_entry["point_ratios"].copy()
         matches = []
 
-        # TODO: better drawings
         # blank images to show which points are matched
         new_points_img = np.zeros((500, 500, 3), np.uint8)
         new_points_img[:, :] = [255, 255, 255]
@@ -121,9 +125,8 @@ elif args.action.lower() == "match":
                 ratio_matches = 0
                 for ref_ratio in ref_ratio_list[1:4]:
                         for new_ratio in new_ratio_list[1:4]:
-                            # print("Comparing new ratio " + str(new_ratio) + " with ref ratio " + str(ref_ratio))
                             # TODO: tune tolerances
-                            if abs(ref_ratio[0] - new_ratio[0]) <= .0005 and abs(ref_ratio[1] - new_ratio[1]) <= .0005:
+                            if abs(ref_ratio[0] - new_ratio[0]) <= .05 and abs(ref_ratio[1] - new_ratio[1]) <= .05:
                                 ratio_matches += 1
 
                 if ratio_matches == 3:
@@ -141,6 +144,15 @@ elif args.action.lower() == "match":
         for unmatched_pt in candidate_ref_points:
             cv2.circle(ref_points_img, center=(int(unmatched_pt[0][0]), int(unmatched_pt[0][1])), radius=2, color=(0, 0, 255), thickness=-1)
         cv2.putText(ref_points_img, "Ref points", (20, 20), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1, cv2.LINE_AA)
+
+        # FOR DEBUGGING ONLY
+        # for point in ref_constellation_entry["point_ratios"]:
+        #     coords = "(" + str(int(point[0][0])) + ", " + str(int(point[0][1])) + ")"
+        #     cv2.putText(ref_points_img, coords, (int(point[0][0]) + 3, int(point[0][1]) + 3), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1, cv2.LINE_AA)
+        #
+        # for point in new_point_ratios:
+        #     coords = "(" + str(int(point[0][0])) + ", " + str(int(point[0][1])) + ")"
+        #     cv2.putText(new_points_img, coords, (int(point[0][0]) + 3, int(point[0][1]) + 3), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 1, cv2.LINE_AA)
 
         double_image = np.concatenate((new_points_img, separator_bar, ref_points_img), axis=1)
 
@@ -213,6 +225,10 @@ elif args.action.lower() == "test_ratio":
     ratioCalc = RatioCalculator()
     new_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints, draw=True)
 
-        # FORMAT: ref_point_ratios[point] = [(point_x, point_y), (first_dist/second_dist, angle between first and second), (first_dist/third_dist, angle between first and third), (second_dist/third_dist, angle between second and third)]
+    # end process if too few points were found to create ratios
+    if new_point_ratios is None:
+        print("Too few points were found.  Please adjust angle and try again.")
+        exit(0)
+
 else:
     print("Invalid action")

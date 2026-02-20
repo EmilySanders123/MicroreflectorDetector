@@ -88,4 +88,5 @@ class RatioCalculator:
         first_to_third_angle = math.acos((center_to_first_dist ** 2 + center_to_third_dist ** 2 - first_to_third_dist ** 2) / (2 * center_to_first_dist * center_to_third_dist))
         second_to_third_angle = math.acos((center_to_second_dist ** 2 + center_to_third_dist ** 2 - second_to_third_dist ** 2) / (2 * center_to_second_dist * center_to_third_dist))
 
+        # FORMAT: ref_point_ratios[point] = [(point_x, point_y), (first_dist/second_dist, angle between first and second), (first_dist/third_dist, angle between first and third), (second_dist/third_dist, angle between second and third)]
         return [centerpoint, (first_over_second_dist, first_to_second_angle), (first_over_third_dist, first_to_third_angle), (second_over_third_dist,  second_to_third_angle)]
