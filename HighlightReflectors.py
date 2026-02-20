@@ -126,7 +126,7 @@ elif args.action.lower() == "match":
                 for ref_ratio in ref_ratio_list[1:4]:
                         for new_ratio in new_ratio_list[1:4]:
                             # TODO: tune tolerances
-                            if abs(ref_ratio[0] - new_ratio[0]) <= .05 and abs(ref_ratio[1] - new_ratio[1]) <= .05:
+                            if abs(ref_ratio[0] - new_ratio[0]) <= 0.08 and abs(ref_ratio[1] - new_ratio[1]) <= 0.08:
                                 ratio_matches += 1
 
                 if ratio_matches == 3:
@@ -136,6 +136,9 @@ elif args.action.lower() == "match":
                     # draw matched new point on image
                     cv2.circle(new_points_img, center=(int(new_ratio_list[0][0]), int(new_ratio_list[0][1])), radius=2, color=(10, 150, 0), thickness=-1)
                     cv2.circle(ref_points_img, center=(int(ref_ratio_list[0][0]), int(ref_ratio_list[0][1])), radius=2, color=(10, 150, 0), thickness=-1)
+
+                    # if all three points are matched, stop comparing new ratio points because we don't need any more
+                    break
 
         for unmatched_pt in candidate_new_points:
             cv2.circle(new_points_img, center=(int(unmatched_pt[0][0]), int(unmatched_pt[0][1])), radius=2, color=(0, 0, 255), thickness=-1)
