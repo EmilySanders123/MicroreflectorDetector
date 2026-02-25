@@ -16,17 +16,21 @@ from RatioCalculator import RatioCalculator
 
 # get command-line arguments
 parser = argparse.ArgumentParser(description="Highlights microreflectors in images of secure text/dendrites")
-parser.add_argument("path", help="Path to the image")
-parser.add_argument("action", help="Action to perform.  Options: store, match, test")
-parser.add_argument("id", help="Unique ID of the image")
-args = parser.parse_args()
+parser.add_argument("img_path")
+action_group = parser.add_mutually_exclusive_group(required=True)
+action_group.add_argument("-s", "--store", action="store_true", help="Store the constellation data of the image")
+action_group.add_argument("-m", "--match", action="store_true", help="Find the stored image that is the best match to the inputted image")
+action_group.add_argument("-d", "--display", help="Display the constellation stored with the given id")
+action_group.add_argument("-t", "--test", action="store_true", help="Show star generation from inputted image")
+action_group.add_argument("-tr", "--test_ratio", action="store_true", help="Test the ratio generation for the inputted image")
+args_in = parser.parse_args()
 
 # calculate and store centerpoints for specified image
 calc = CenterpointCalculator()
-if args.action == "store" or args.action == "match" or args.action == "display" or args.action == "test_ratio":
-    img_centerpoints = calc.get_centerpoints(args.path, False)
+if args_in.store == True or args_in.match == True or args_in.display is not None:
+    img_centerpoints = calc.get_centerpoints(args_in.img_path, False)
 else:
-    img_centerpoints = calc.get_centerpoints(args.path, True)
+    img_centerpoints = calc.get_centerpoints(args_in.img_path, True)
 
 x_list = [point[0] for point in img_centerpoints]
 y_list = [point[1] for point in img_centerpoints]
@@ -56,28 +60,27 @@ if new_point_ratios is None:
 # take action indicated by command-line argument
 # store point set in database
 # TODO: store more info
-if args.action.lower() == "store":
+if args_in.store:
     try:
         print("Opening file...")
         with open("StorageJSON.json", "r+") as file:
             print("File found.  Adding new point data...")
             data = json.load(file)
             id_list = [item.get("id") for item in data["stored_graphs"]]
-            if args.id not in id_list:
-                new_point_obj = {"id": args.id, "point_ratios": new_point_ratios}
+            new_point_obj = {"id": str(int(max(id_list)) + 1), "point_ratios": new_point_ratios}
 
-                data["stored_graphs"].append(new_point_obj)
-                print("Point data added.")
-            else:
-                print("Point with ID already exists in file.")
+            data["stored_graphs"].append(new_point_obj)
+
             file.seek(0)
             json.dump(data, file, indent=4)
+
+            print("Point data added.")
 
     # make new database file if one is not found
     except FileNotFoundError:
         print("File not found.  Adding point data to newly created file...")
         data = {"stored_graphs": []}
-        new_point_obj = {"id": args.id, "point_ratios": new_point_ratios}
+        new_point_obj = {"id": "1", "point_ratios": new_point_ratios}
         data["stored_graphs"].append(new_point_obj)
         with open("StorageJSON.json", "w") as file:
             json.dump(data, file, indent=4)
@@ -86,7 +89,7 @@ if args.action.lower() == "store":
         print("Could not parse JSON file format.  The file may be corrupted.")
 
 # try to match point set with set in database
-elif args.action.lower() == "match":
+elif args_in.match:
     try:
         with open("StorageJSON.json", "r") as file:
             data = json.load(file)
@@ -193,7 +196,7 @@ elif args.action.lower() == "match":
         else:
             print("No matches found.")
 
-elif args.action.lower() == "display":
+elif args_in.display:
     try:
         with open("StorageJSON.json", "r") as file:
             data = json.load(file)
@@ -206,25 +209,27 @@ elif args.action.lower() == "display":
 
     ref_constellation_obj_list = data["stored_graphs"]
 
+    print(type(args_in.display))
     for obj in ref_constellation_obj_list:
-        if obj["id"] == args.id:
+        print(type(obj["id"]))
+        if obj["id"] == int(args_in.display):
             # draw all centerpoints on a new image
             display_img = np.zeros((500, 500, 3), np.uint8)
             display_img[:, :] = [255, 255, 255]
-            for i in obj["points"]:
+            for i in obj["point_ratios"]:
                 print(i)
-                cv2.circle(display_img, (int(i[0]), int(i[1])), 2, (0, 0, 255), -1)
+                cv2.circle(display_img, (int(i[0][0]), int(i[0][1])), 2, (0, 0, 255), -1)
 
             cv2.imshow("Chosen image", display_img)
             cv2.waitKey(0)
             exit(0)
 
-    print("Entry with id " + args.id + " not found.")
+    print("Entry with id " + args_in.display + " not found.")
 
-elif args.action.lower() == "test":
+elif args_in.test:
     pass
 
-elif args.action.lower() == "test_ratio":
+elif args_in.test_ratio:
     ratioCalc = RatioCalculator()
     new_point_ratios = ratioCalc.generate_constellation_ratios(norm_img_centerpoints, draw=True)
 
