@@ -1,36 +1,65 @@
 #!/usr/bin/env python3
 import argparse
-import ast
 import json
 from operator import itemgetter
-from sys import displayhook
-from types import new_class
 
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from fontTools.misc.bezierTools import segmentPointAtT
 
 from CenterpointCalculator import CenterpointCalculator
 from RatioCalculator import RatioCalculator
 
 # get command-line arguments
 parser = argparse.ArgumentParser(description="Highlights microreflectors in images of secure text/dendrites")
-parser.add_argument("img_path")
 action_group = parser.add_mutually_exclusive_group(required=True)
-action_group.add_argument("-s", "--store", action="store_true", help="Store the constellation data of the image")
-action_group.add_argument("-m", "--match", action="store_true", help="Find the stored image that is the best match to the inputted image")
+action_group.add_argument("-s", "--store", help="Store the constellation data of the image")
+action_group.add_argument("-m", "--match", help="Find the stored image that is the best match to the inputted image")
 action_group.add_argument("-d", "--display", help="Display the constellation stored with the given id")
-action_group.add_argument("-t", "--test", action="store_true", help="Show star generation from inputted image")
-action_group.add_argument("-tr", "--test_ratio", action="store_true", help="Test the ratio generation for the inputted image")
+action_group.add_argument("-t", "--test", help="Show star generation from inputted image")
+action_group.add_argument("-tr", "--test_ratio", help="Test the ratio generation for the inputted image")
 args_in = parser.parse_args()
+
+# if display option is chosen, display selected constellation without processing an image
+if args_in.display is not None:
+    try:
+        with open("StorageJSON.json", "r") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        print("Points file not found.")
+        exit(0)
+    except json.decoder.JSONDecodeError:
+        print("Could not parse JSON file format.  The file may be corrupted.")
+        exit(0)
+
+    ref_constellation_obj_list = data["stored_graphs"]
+
+    for obj in ref_constellation_obj_list:
+        print(type(obj["id"]))
+        if obj["id"] == args_in.display:
+            # draw all centerpoints on a new image
+            display_img = np.zeros((500, 500, 3), np.uint8)
+            display_img[:, :] = [255, 255, 255]
+            for i in obj["point_ratios"]:
+                print(i)
+                cv2.circle(display_img, (int(i[0][0]), int(i[0][1])), 2, (0, 0, 255), -1)
+
+            cv2.imshow("Chosen image", display_img)
+            cv2.waitKey(0)
+            exit(0)
 
 # calculate and store centerpoints for specified image
 calc = CenterpointCalculator()
-if args_in.store == True or args_in.match == True or args_in.display is not None:
-    img_centerpoints = calc.get_centerpoints(args_in.img_path, False)
+if args_in.store is not None:
+    img_centerpoints = calc.get_centerpoints(args_in.store, False)
+elif args_in.match is not None:
+    img_centerpoints = calc.get_centerpoints(args_in.match, False)
+elif args_in.test is not None:
+    img_centerpoints = calc.get_centerpoints(args_in.test, True)
+elif args_in.test_ratio is not None:
+    img_centerpoints = calc.get_centerpoints(args_in.test_ratio, True)
 else:
-    img_centerpoints = calc.get_centerpoints(args_in.img_path, True)
+    print("You should not be able to get here")
+    exit(0)
 
 x_list = [point[0] for point in img_centerpoints]
 y_list = [point[1] for point in img_centerpoints]
@@ -60,7 +89,7 @@ if new_point_ratios is None:
 # take action indicated by command-line argument
 # store point set in database
 # TODO: store more info
-if args_in.store:
+if args_in.store is not None:
     try:
         print("Opening file...")
         with open("StorageJSON.json", "r+") as file:
@@ -195,36 +224,6 @@ elif args_in.match:
             print("ID with best match: " + max_ref_match[0])
         else:
             print("No matches found.")
-
-elif args_in.display:
-    try:
-        with open("StorageJSON.json", "r") as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        print("Points file not found.")
-        exit(0)
-    except json.decoder.JSONDecodeError:
-        print("Could not parse JSON file format.  The file may be corrupted.")
-        exit(0)
-
-    ref_constellation_obj_list = data["stored_graphs"]
-
-    print(type(args_in.display))
-    for obj in ref_constellation_obj_list:
-        print(type(obj["id"]))
-        if obj["id"] == int(args_in.display):
-            # draw all centerpoints on a new image
-            display_img = np.zeros((500, 500, 3), np.uint8)
-            display_img[:, :] = [255, 255, 255]
-            for i in obj["point_ratios"]:
-                print(i)
-                cv2.circle(display_img, (int(i[0][0]), int(i[0][1])), 2, (0, 0, 255), -1)
-
-            cv2.imshow("Chosen image", display_img)
-            cv2.waitKey(0)
-            exit(0)
-
-    print("Entry with id " + args_in.display + " not found.")
 
 elif args_in.test:
     pass
