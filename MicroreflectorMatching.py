@@ -10,13 +10,13 @@ from CenterpointCalculator import CenterpointCalculator
 from RatioCalculator import RatioCalculator
 
 # get command-line arguments
-parser = argparse.ArgumentParser(description="Highlights microreflectors in images of secure text/dendrites")
+parser = argparse.ArgumentParser(description="Identifies, stores, and matches reflective particles embedded in dendritic identifiers and secure text.")
 action_group = parser.add_mutually_exclusive_group(required=True)
-action_group.add_argument("-s", "--store", help="Store the constellation data of the image")
-action_group.add_argument("-m", "--match", help="Find the stored image that is the best match to the inputted image")
-action_group.add_argument("-d", "--display", help="Display the constellation stored with the given id")
-action_group.add_argument("-t", "--test", help="Show star generation from inputted image")
-action_group.add_argument("-tr", "--test_ratio", help="Test the ratio generation for the inputted image")
+action_group.add_argument("-s", "--store", help="Store the constellation information of the given image")
+action_group.add_argument("-m", "--match", help="Calculate the constellation of the given image and find the best match in the stored constellations on record")
+action_group.add_argument("-d", "--display", help="Display the selected constellation with matching ID as points on a graph")
+action_group.add_argument("-t", "--test", help="Graphically represent all star generation steps of the given image, from the raw image to the final constellation")
+action_group.add_argument("-tr", "--test_ratio", help="Graphically represent the ratio generation for all stars in the given imagee")
 args_in = parser.parse_args()
 
 # if display option is chosen, display selected constellation without processing an image
