@@ -5,9 +5,6 @@ import cv2
 import numpy as np
 
 class CenterpointCalculator:
-    def __init__(self):
-        # placeholder
-        pass
 
     def get_centerpoints(self, img_name: str, show_imgs: bool) -> list:
         """
@@ -26,7 +23,6 @@ class CenterpointCalculator:
         min_diff = 255 - np.array(gray_im).max()
         gray_im += min_diff
         ret, thresh_im = cv2.threshold(gray_im, 155, 255, cv2.THRESH_BINARY)
-        # TODO: mess with image brightening values?  change contrast?
 
         # generate contours from filtered image
         contours, hierarchies = cv2.findContours(thresh_im, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
