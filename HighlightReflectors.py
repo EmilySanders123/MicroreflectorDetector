@@ -3,7 +3,6 @@ import argparse
 import json
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from CenterpointCalculator import CenterpointCalculator
 
 
@@ -39,7 +38,7 @@ norm_img_centerpoints = list(zip(x_list_normalized, y_list_normalized))
 if args.action.lower() == "store":
     try:
         print("Opening file...")
-        with open("StorageJSON.json", "r+") as file:
+        with open("StorageJSONOldFormat.json", "r+") as file:
             print("File found.  Adding new point data...")
             data = json.load(file)
             id_list = [item.get("id") for item in data["stored_graphs"]]
@@ -57,7 +56,7 @@ if args.action.lower() == "store":
         data = {"stored_graphs": []}
         new_point_obj = {"id": args.id, "points": norm_img_centerpoints}
         data["stored_graphs"].append(new_point_obj)
-        with open("StorageJSON.json", "w") as file:
+        with open("StorageJSONOldFormat.json", "w") as file:
             json.dump(data, file, indent=4)
         print("Point data added.")
     except json.decoder.JSONDecodeError:
@@ -66,7 +65,7 @@ if args.action.lower() == "store":
 # try to match point set with set in database
 elif args.action.lower() == "match":
     try:
-        with open("StorageJSON.json", "r") as file:
+        with open("StorageJSONOldFormat.json", "r") as file:
             data = json.load(file)
     except FileNotFoundError:
         print("Points file not found.")
