@@ -36,7 +36,7 @@ class MatchCalculator:
                     ratio_matches = 0
                     for ref_ratio in ref_ratio_list[1:4]:
                         for new_ratio in new_ratio_list[1:4]:
-                            if abs(ref_ratio[0] - new_ratio[0]) <= 0.08 and abs(ref_ratio[1] - new_ratio[1]) <= 0.08:
+                            if abs(ref_ratio[0] - new_ratio[0]) <= 0.1 and abs(ref_ratio[1] - new_ratio[1]) <= 0.1:
                                 ratio_matches += 1
 
                     # if all three ratios match, then points are a positive match

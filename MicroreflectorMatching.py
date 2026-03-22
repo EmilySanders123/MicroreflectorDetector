@@ -46,7 +46,6 @@ def main():
         ref_constellation_obj_list = data["stored_graphs"]
 
         for obj in ref_constellation_obj_list:
-            print(type(obj["id"]))
             if obj["id"] == args_in.display:
                 # draw all centerpoints on a new image
                 display_img = np.zeros((500, 500, 3), np.uint8)
