@@ -5,13 +5,14 @@ from operator import itemgetter
 
 class SimilarityCalculator:
     point_obj_list = []
-    ref_stars_percent_list = []
-    new_stars_percent_list = []
 
     def __init__(self, point_obj_list: list):
         self.point_obj_list = point_obj_list
 
     def find_best_match(self, norm_img_centerpoints: list) -> int | None:
+        ref_stars_percent_list = []
+        new_stars_percent_list = []
+
         for entry_list in self.point_obj_list:
             candidate_points = norm_img_centerpoints.copy()
             matches = []
@@ -50,6 +51,7 @@ class SimilarityCalculator:
                         # skip to next ref point
                         break
 
+            # draw all unmatched new points
             for unmatched_pt in candidate_points:
                 cv2.circle(points_img, center=(int(unmatched_pt[0]), int(unmatched_pt[1])), radius=2, color=(0, 0, 255),
                            thickness=-1)
@@ -57,8 +59,8 @@ class SimilarityCalculator:
             # record overall percentage of new points and reference points that were matched
             percent_ref_stars_matched = len(matches) / len(entry_list["points"]) * 100
             percent_new_stars_matched = len(matches) / len(norm_img_centerpoints) * 100
-            self.ref_stars_percent_list.append((entry_list["id"], percent_ref_stars_matched))
-            self.new_stars_percent_list.append((entry_list["id"], percent_new_stars_matched))
+            ref_stars_percent_list.append((entry_list["id"], percent_ref_stars_matched))
+            new_stars_percent_list.append((entry_list["id"], percent_new_stars_matched))
 
             print("Point cloud " + entry_list["id"] + ":")
             print("Matches: " + str(len(matches)))
@@ -70,7 +72,7 @@ class SimilarityCalculator:
             cv2.destroyAllWindows()
 
         # the percentages of new stars with a match and reference stars with a match must both be at least 75%
-        high_new_match_list = [i for i in self.new_stars_percent_list if i[1] >= 75]
+        high_new_match_list = [i for i in new_stars_percent_list if i[1] >= 75]
         if len(high_new_match_list) == 0:
             # there are no matches over 75%
             return None
@@ -78,7 +80,7 @@ class SimilarityCalculator:
             # there is at least one match
             # tiebreak with the highest percent of reference stars matched
             # if that is the same as well, then just pick whichever
-            ref_match_list = [ref_percent_tuple for ref_percent_tuple in self.ref_stars_percent_list if
+            ref_match_list = [ref_percent_tuple for ref_percent_tuple in ref_stars_percent_list if
                               ref_percent_tuple[0] in
                               ([new_percent_tuple[0] for new_percent_tuple in high_new_match_list])]
             max_ref_match = max(ref_match_list, key=itemgetter(1))
