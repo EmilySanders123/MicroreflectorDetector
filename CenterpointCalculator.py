@@ -37,25 +37,13 @@ class CenterpointCalculator:
                     centerpoints.add(point)
                     selected_contours.append(i)
 
-        # find center coordinate of all centerpoints listed
-        centerpoints_list = list(centerpoints)
-        center_x = 0
-        center_y = 0
-        for i in range(len(centerpoints_list)):
-            center_x += centerpoints_list[i][0]
-            center_y += centerpoints_list[i][1]
-        center_x //= len(centerpoints_list)
-        center_y //= len(centerpoints_list)
-
-        # sort centerpoints list by proximity to center so they are always in the same order
-        centerpoints_list.sort(key=lambda p: math.sqrt((p[0] - center_x)**2 * (p[1] - center_y)**2))
-
         # display images in separate thread so program doesn't pause until they are closed
         if show_imgs:
-            thread = Thread(target=self.__display_images, args=(im, thresh_im, tuple(selected_contours), centerpoints_list))
+            print("Total points found: " + str(len(centerpoints)))
+            thread = Thread(target=self.__display_images, args=(im, thresh_im, tuple(selected_contours), centerpoints))
             thread.start()
 
-        return centerpoints_list
+        return centerpoints
 
     def __find_contour_center(self, contour: np.ndarray) -> tuple[int, int] | None:
         M = cv2.moments(contour)

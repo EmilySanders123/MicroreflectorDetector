@@ -55,7 +55,8 @@ def main():
 
                 cv2.imshow("Chosen image", display_img)
                 cv2.waitKey(0)
-                exit(0)
+
+        exit(0)
 
     # calculate and store centerpoints for specified image
     calc = CenterpointCalculator()
@@ -144,7 +145,6 @@ def main():
 
         # print out matching id or lack thereof
         if match_id is not None:
-            print(type(match_id))
             print("ID of closest match found: " + match_id)
         else:
             print("No matches found.")
