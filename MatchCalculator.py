@@ -10,7 +10,7 @@ class MatchCalculator:
     def __init__(self, ref_constellation_obj_list: list):
         self.ref_constellation_obj_list = ref_constellation_obj_list
 
-    def find_matches(self, norm_img_centerpoints: list, new_point_ratios: list, debug=False) -> str | None:
+    def find_matches(self, norm_img_centerpoints: list, new_point_ratios: list, debug=False, lines=False) -> str | None:
         # stores percentage of reference stars matched and new stars matched, respectively
         ref_stars_percent_list = []
         new_stars_percent_list = []
@@ -28,6 +28,8 @@ class MatchCalculator:
             ref_points_img[:, :] = [255, 255, 255]
             separator_bar = np.zeros((500, 5, 3), np.uint8)
             separator_bar[:, :] = [0, 0, 0]
+
+            matched_point_pairs = []
 
             # check each point in reference constellations
             for ref_ratio_list in ref_constellation_entry["point_ratios"]:
@@ -49,6 +51,10 @@ class MatchCalculator:
                                    radius=2, color=(10, 150, 0), thickness=-1)
                         cv2.circle(ref_points_img, center=(int(ref_ratio_list[0][0]), int(ref_ratio_list[0][1])),
                                    radius=2, color=(10, 150, 0), thickness=-1)
+
+                        # add coordinates to list to be turned into lines
+                        if lines:
+                            matched_point_pairs.append((new_ratio_list[0], (ref_ratio_list[0][0] + 505, ref_ratio_list[0][1])))
 
                         # if all three points are matched, stop comparing new ratio points because we don't need any more
                         break
@@ -77,6 +83,8 @@ class MatchCalculator:
 
             # stick all images together
             double_image = np.concatenate((new_points_img, separator_bar, ref_points_img), axis=1)
+            for point_pair in matched_point_pairs:
+                cv2.line(double_image, (int(point_pair[0][0]), int(point_pair[0][1])), (int(point_pair[1][0]), int(point_pair[1][1])), color=(0, 0, 0), thickness=1)
 
             # record overall percentage of new points and reference points that were matched
             percent_ref_stars_matched = len(matches) / len(ref_constellation_entry["point_ratios"]) * 100

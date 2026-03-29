@@ -13,20 +13,22 @@ Open a terminal in the directory where the MicroreflectorMatching.exe file is st
 ### Usage
 The program can be run with the following base command: `\.MicroreflectorMatching.exe`
 
-Usage: `.\MicroreflectorMatching.exe [-h] (-s STORE | -m MATCH | -d DISPLAY | -t TEST | -tr TEST_RATIO)`
+Usage: `.\MicroreflectorMatching.exe [-h] [--verbose] (-s STORE | -m MATCH | -d DISPLAY | -t TEST | -tr TEST_RATIO)`
 
 **Options:**
 
-*Only one flag may be used*
+--verbose: enables more output that may be helpful with debugging.
 
-| Flag             | Value                   | Description                                                                                                        |
-|------------------|-------------------------|--------------------------------------------------------------------------------------------------------------------|
-| -h/--help        | N/A                     | Provides a description of the program and an explanation of all flags                                              |
-| -s/--store       | Image filepath          | Stores the constellation information of the given image                                                            |
-| -m/--match       | Image filepath          | Calculates the constellation of the given image and finds the best match in the stored constellations on record    |
-| -d/--display     | Stored constellation ID | Displays the selected constellation with matching ID as points on a graph                                                             |
-| -t/--test        | Image filepath          | Graphically represents all star generation steps of the given image, from the raw image to the final constellation |
-| -tr/--test_ratio | Image filepath          | Graphically represents the ratio generation for all stars in the given image                                       |
+*Only one flag in the tablemay be used*
+
+| Flag             | Value                   | Description                                                                                                                                                               |
+|------------------|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -h/--help        | N/A                     | Provides a description of the program and an explanation of all flags                                                                                                     |
+| -s/--store       | Image filepath          | Stores the constellation information of the given image                                                                                                                   |
+| -m/--match       | Image filepath          | Calculates the constellation of the given image and finds the best match in the stored constellations on record (draws lines between matched points when using --verbose) |
+| -d/--display     | Stored constellation ID | Displays the selected constellation with matching ID as points on a graph                                                                                                 |
+| -t/--test        | Image filepath          | Graphically represents all star generation steps of the given image, from the raw                                                                                         |
+| -tr/--test_ratio | Image filepath          | Graphically represents the ratio generation for all stars in the given image                                                                                              |
 
 # Running with Python
 ### Setup

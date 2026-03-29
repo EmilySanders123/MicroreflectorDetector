@@ -27,6 +27,7 @@ def main():
     # get command-line arguments
     parser = argparse.ArgumentParser(
         description="Identifies, stores, and matches reflective particles embedded in dendritic identifiers and secure text.")
+    parser.add_argument("--verbose", action="store_true", help="Adds extra information for debugging.")
     action_group = parser.add_mutually_exclusive_group(required=True)
     action_group.add_argument("-s", "--store", help="Store the constellation information of the given image")
     action_group.add_argument("-m", "--match",
@@ -90,7 +91,7 @@ def main():
 
     # calculate ratios between all points
     ratio_calc = RatioCalculator()
-    new_point_ratios = ratio_calc.generate_constellation_ratios(norm_img_centerpoints)
+    new_point_ratios = ratio_calc.generate_constellation_ratios(norm_img_centerpoints, args_in.verbose)
 
     # end process if too few points were found to create ratios
     if new_point_ratios is None:
@@ -141,7 +142,7 @@ def main():
 
         # find the stored constellation with the highest match percentage
         match_calculator = MatchCalculator(ref_constellation_obj_list)
-        match_id = match_calculator.find_matches(norm_img_centerpoints, new_point_ratios)
+        match_id = match_calculator.find_matches(norm_img_centerpoints, new_point_ratios, args_in.verbose)
 
         # print out matching id or lack thereof
         if match_id is not None:
